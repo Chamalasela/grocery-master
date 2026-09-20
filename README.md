@@ -21,3 +21,11 @@ The first launch includes an editable example list. Weekly rollover is checked o
 ## Verify
 
 Run `node --check app.js` and `node tests/weekly-rollover.cjs` to check syntax, calendar rollover, stock retention, and saved-list migration.
+
+## GitHub Pages
+
+Live app: https://chamalasela.github.io/grocery-master/
+
+The repository publishes from `main`, at `/ (root)`, using GitHub Pages. The `.nojekyll` file ensures the static files are served without Jekyll processing. Pushes to `main` automatically update the site; no build step is needed.
+
+The hosted app still stores all grocery data locally in the browser. Data does not sync between devices or transfer from localhost to the GitHub Pages address.
