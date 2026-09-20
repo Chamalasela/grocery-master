@@ -19,7 +19,7 @@
     ['Minced chicken', '250 g'], ['Greek yogurt', '1 tub'], ['Eggs', '12-egg box'],
     ['Avocados', '2'], ['Bananas', '6'], ['Baby spinach', '1 bag'],
     ['Oat milk', '1 L'], ['Sourdough bread', '1 loaf']
-  ].map(([name, quantity]) => ({id: makeId(), name, quantity, buyCount: 1, stock: null, done: false}))});
+  ].map(([name, quantity]) => ({id: makeId(), name, quantity, buyCount: 1, stock: null, repeatWeekly: true, active: true, done: false}))});
   let storageAvailable = true;
   let state;
   try {
@@ -33,6 +33,8 @@
   // Extend existing saved lists without changing quantities or checkmarks.
   state.items.forEach(item => {
     item.buyCount = Number.isSafeInteger(item.buyCount) && item.buyCount > 0 ? item.buyCount : 1;
+    item.repeatWeekly = typeof item.repeatWeekly === 'boolean' ? item.repeatWeekly : true;
+    item.active = typeof item.active === 'boolean' ? item.active : true;
     item.stock = Number.isSafeInteger(item.stock) && item.stock >= 0 ? item.stock : null;
   });
   let filter = 'all';
@@ -42,11 +44,14 @@
     catch { storageAvailable = false; }
     $('save-status').textContent = storageAvailable ? 'Changes saved on this device' : 'Storage unavailable — keep this page open';
   }
+  function startWeek(week) {
+    state.week = week;
+    state.items.forEach(item => { item.done = false; item.active = item.repeatWeekly; });
+  }
   function rollover() {
     const current = weekOf();
     if (current > state.week) {
-      state.week = current;
-      state.items.forEach(item => { item.done = false; });
+      startWeek(current);
       save();
       return true;
     }
@@ -54,8 +59,9 @@
   }
   function announce(message) { $('announcement').textContent = message; }
   function render() {
-    const done = state.items.filter(item => item.done).length;
-    const total = state.items.length;
+    const weeklyItems = state.items.filter(item => item.active);
+    const done = weeklyItems.filter(item => item.done).length;
+    const total = weeklyItems.length;
     const remaining = total - done;
     const start = parseDate(state.week);
     const end = parseDate(state.week); end.setDate(end.getDate() + 6);
@@ -69,13 +75,15 @@
     $('remaining-count').textContent = remaining;
     $('footer-count').textContent = `${remaining} ${remaining === 1 ? 'item' : 'items'} left to pick up`;
     $('rollover-detail').textContent = `Next refresh: ${parseDate(nextWeek(state.week)).toLocaleDateString('en-US', {weekday: 'long', month: 'short', day: 'numeric'})}.`;
-    const visible = state.items.filter(item => filter === 'all' || (filter === 'done' ? item.done : !item.done));
+    const visible = state.items.filter(item => filter === 'saved' ? !item.active : item.active && (filter === 'all' || (filter === 'done' ? item.done : !item.done)));
+    $('saved-count').textContent = state.items.filter(item => !item.active).length;
     const list = $('shopping-list'); list.replaceChildren();
     visible.forEach(item => {
       const row = document.createElement('li'); row.className = `grocery-row${item.done ? ' done' : ''}`;
       const check = document.createElement('button'); check.type = 'button'; check.className = 'check-button'; check.setAttribute('role', 'checkbox'); check.setAttribute('aria-checked', String(item.done)); check.setAttribute('aria-label', `${item.name}, ${item.quantity}`); check.textContent = item.done ? '✓' : '';
+      check.hidden = !item.active;
       check.addEventListener('click', () => {
-        rollover(); item.done = !item.done; save(); render();
+        if (rollover()) { render(); return; } item.done = !item.done; save(); render();
         const checks = [...list.querySelectorAll('.check-button')];
         (checks.find(button => button.getAttribute('aria-label') === `${item.name}, ${item.quantity}`) || checks[0] || $('item-name')).focus();
         announce(`${item.name} ${item.done ? 'added to basket' : 'marked to buy'}.`);
@@ -83,8 +91,17 @@
       const name = document.createElement('span'); name.className = 'item-label';
       const title = document.createElement('span'); title.className = 'item-title'; title.textContent = item.name;
       const pack = document.createElement('small'); pack.className = 'pack-size'; pack.textContent = item.quantity;
-      name.append(title, pack);
-      const quantity = document.createElement('span'); quantity.className = 'quantity-badge'; quantity.textContent = `Buy × ${item.buyCount}`; quantity.setAttribute('aria-label', `Buy ${item.buyCount} of ${item.quantity}`);
+      const repeat = document.createElement('label'); repeat.className = 'repeat-choice';
+      const repeatInput = document.createElement('input'); repeatInput.type = 'checkbox'; repeatInput.checked = item.repeatWeekly;
+      repeatInput.setAttribute('aria-label', `Repeat ${item.name} weekly`);
+      repeatInput.addEventListener('change', () => { item.repeatWeekly = repeatInput.checked; save(); announce(`${item.name}: ${item.repeatWeekly ? 'repeats weekly' : 'will not repeat next week'}.`); });
+      repeat.append(repeatInput, document.createTextNode('Repeat weekly'));
+      name.append(title, pack, repeat);
+      const quantity = document.createElement(item.active ? 'span' : 'button'); quantity.className = 'quantity-badge'; quantity.textContent = `Buy × ${item.buyCount}`; quantity.setAttribute('aria-label', `Buy ${item.buyCount} of ${item.quantity}`);
+      if (!item.active) {
+        quantity.type = 'button'; quantity.textContent = '+ This week'; quantity.setAttribute('aria-label', `Add ${item.name} to this week`);
+        quantity.addEventListener('click', () => { rollover(); item.active = true; item.done = false; save(); render(); announce(`${item.name} added to this week.`); });
+      }
       const stock = document.createElement('button'); stock.type = 'button'; stock.className = `stock-badge${item.stock === 0 ? ' no-stock' : ''}`; stock.textContent = `At home: ${item.stock === null ? 'Not set' : item.stock}`; stock.setAttribute('aria-label', `Update stock for ${item.name}: ${item.stock === null ? 'not set' : item.stock}`); stock.title = 'Update stock at home';
       stock.addEventListener('click', () => openEdit(item, true));
       const actions = document.createElement('div'); actions.className = 'row-actions';
@@ -95,7 +112,7 @@
       actions.append(edit, remove); row.append(check, name, quantity, stock, actions); list.append(row);
     });
     $('empty-state').hidden = visible.length > 0;
-    $('empty-state').textContent = !total ? 'A fresh list awaits. Add your first weekly staple above.' : filter === 'done' ? 'Your basket is empty. Check off an item to get started.' : 'Everything is in the basket. Happy shopping!';
+    $('empty-state').textContent = filter === 'saved' ? 'No saved items yet. Items without weekly repeat will appear here after the week ends.' : !total ? 'A fresh list awaits. Add your first weekly staple above.' : filter === 'done' ? 'Your basket is empty. Check off an item to get started.' : 'Everything is in the basket. Happy shopping!';
     document.querySelectorAll('[data-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.filter === filter)));
     $('save-status').textContent = storageAvailable ? 'Changes saved on this device' : 'Storage unavailable — keep this page open';
   }
@@ -105,6 +122,7 @@
     $('edit-quantity').value = item.quantity;
     $('edit-buy-count').value = item.buyCount;
     $('edit-stock').value = item.stock ?? '';
+    $('edit-repeat').checked = item.repeatWeekly;
     $('edit-dialog').showModal();
     if (focusStock) $('edit-stock').focus();
   }
@@ -120,7 +138,7 @@
     const name = $('item-name').value.trim(); const quantity = $('item-quantity').value.trim();
     const counts = readCounts('item');
     if (!name || !quantity || !counts) return;
-    rollover(); state.items.push({id: makeId(), name, quantity, ...counts, done: false}); filter = 'all'; save(); render(); $('add-form').reset(); $('item-name').focus(); announce(`${name} added to your weekly list.`);
+    rollover(); state.items.push({id: makeId(), name, quantity, ...counts, repeatWeekly: $('item-repeat').checked, active: true, done: false}); filter = 'all'; save(); render(); $('add-form').reset(); $('item-name').focus(); announce(`${name} added to your weekly list.`);
   });
   $('edit-form').addEventListener('submit', event => {
     event.preventDefault();
@@ -128,15 +146,15 @@
     const counts = readCounts('edit');
     if (!name || !quantity || !counts) return;
     const item = state.items.find(entry => entry.id === editingId);
-    if (item) Object.assign(item, {name, quantity, ...counts});
+    if (item) Object.assign(item, {name, quantity, ...counts, repeatWeekly: $('edit-repeat').checked});
     $('edit-dialog').close(); save(); render(); announce('Item updated.');
   });
   $('cancel-edit').addEventListener('click', () => $('edit-dialog').close());
   document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => { filter = button.dataset.filter; render(); }));
   $('reset-button').addEventListener('click', () => { state.items.forEach(item => { item.done = false; }); save(); render(); announce('All items marked to buy.'); });
   $('next-week-button').addEventListener('click', () => {
-    if (!confirm('Start next week now? Your items and quantities will carry over, and all checkmarks will clear.')) return;
-    state.week = nextWeek(state.week); state.items.forEach(item => { item.done = false; }); filter = 'all'; save(); render(); announce('Your next week is ready.');
+    if (!confirm('Start next week now? Only items marked Repeat weekly will carry over. Other items will stay in Saved items with their stock. Checkmarks will clear.')) return;
+    startWeek(nextWeek(state.week)); filter = 'all'; save(); render(); announce('Your next week is ready.');
   });
   window.addEventListener('focus', () => { if (rollover()) render(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && rollover()) render(); });
