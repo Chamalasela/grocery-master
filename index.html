@@ -22,17 +22,24 @@
       <section class="progress-card" aria-label="Shopping progress"><div class="progress-icon" aria-hidden="true">✓</div><div class="progress-copy"><h2 id="progress-title">Let’s fill that basket.</h2><p id="progress-description">A small list. A smoother week.</p></div><div class="progress-numbers"><strong id="progress-count">0 <span>/ 0</span></strong><small>items in your basket</small></div><div class="progress-track"><div id="progress-bar"></div></div></section>
       <section class="list-section" aria-labelledby="list-title">
         <div class="list-heading"><div><h2 id="list-title">The shopping list <span id="item-count">0</span></h2><p>Your weekly regulars. Make it your own.</p></div><button class="text-button" id="reset-button" type="button">↺ Reset checks</button></div>
-        <form id="add-form" class="add-form"><label class="item-input"><span aria-hidden="true">＋</span><input id="item-name" aria-label="Item name" placeholder="Add an item, like Greek yogurt" maxlength="80" required autocomplete="off"></label><input id="item-quantity" aria-label="Quantity" placeholder="Qty, e.g. 250 g" maxlength="30" required autocomplete="off"><button class="primary-button" type="submit">Add item <span>＋</span></button></form>
-        <div class="list-toolbar"><div class="filters" aria-label="Filter shopping list"><button type="button" data-filter="all" aria-pressed="true">All items</button><button type="button" data-filter="remaining" aria-pressed="false">To buy <span id="remaining-count"></span></button><button type="button" data-filter="done" aria-pressed="false">In basket</button></div><span class="quantity-heading">QUANTITY</span></div>
+        <form id="add-form" class="add-form">
+          <label class="add-name">Item name<input id="item-name" placeholder="e.g. Eggs" maxlength="80" required autocomplete="off"></label>
+          <label class="add-pack">Pack / unit<input id="item-quantity" placeholder="e.g. 12-egg box" maxlength="30" required autocomplete="off"></label>
+          <label class="add-count">To buy<input id="item-buy-count" type="number" min="1" max="999999" step="1" value="1" required></label>
+          <label class="add-count">At home<input id="item-stock" type="number" min="0" max="999999" step="1" placeholder="Not set"></label>
+          <button class="primary-button" type="submit">Add item <span>＋</span></button>
+        </form>
+        <p class="stock-help">Stock counts packs or units. Update it as you use them; shopping checkmarks don’t change stock.</p>
+        <div class="list-toolbar"><div class="filters" aria-label="Filter shopping list"><button type="button" data-filter="all" aria-pressed="true">All items</button><button type="button" data-filter="remaining" aria-pressed="false">To buy <span id="remaining-count"></span></button><button type="button" data-filter="done" aria-pressed="false">In basket</button></div><span class="quantity-heading">BUY &amp; STOCK</span></div>
         <ul id="shopping-list" aria-label="Grocery items"></ul>
         <div id="empty-state" hidden></div>
         <div class="list-footer"><span><span class="green-check">✓</span> <span id="save-status">Changes saved on this device</span></span><span id="footer-count"></span></div>
       </section>
-      <section class="rollover-card"><span class="rollover-icon" aria-hidden="true">↻</span><div><h3>Same staples. Fresh week.</h3><p>Every Monday, your items carry over and checkmarks clear automatically.</p><p class="rollover-detail" id="rollover-detail"></p></div><button id="next-week-button" type="button">Start next week <span>→</span></button></section>
+      <section class="rollover-card"><span class="rollover-icon" aria-hidden="true">↻</span><div><h3>Same staples. Fresh week.</h3><p>Every Monday, your items and stock carry over. Only checkmarks clear.</p><p class="rollover-detail" id="rollover-detail"></p></div><button id="next-week-button" type="button">Start next week <span>→</span></button></section>
       <footer class="page-footer">A little order for your everyday. <span>Made for your weekly ritual.</span></footer>
     </div>
   </main>
-  <dialog id="edit-dialog"><form id="edit-form"><h2>Edit your staple</h2><label>Item name<input id="edit-name" maxlength="80" required></label><label>Quantity<input id="edit-quantity" maxlength="30" required></label><div class="dialog-actions"><button type="button" id="cancel-edit">Cancel</button><button class="primary-button" type="submit">Save changes</button></div></form></dialog>
+  <dialog id="edit-dialog"><form id="edit-form"><h2>Edit your staple</h2><label>Item name<input id="edit-name" maxlength="80" required></label><label>Pack / unit<input id="edit-quantity" placeholder="e.g. 250 g pack or 12-egg box" maxlength="30" required></label><div class="edit-counts"><label>To buy<input id="edit-buy-count" type="number" min="1" max="999999" step="1" required></label><label>Stock at home<input id="edit-stock" type="number" min="0" max="999999" step="1" placeholder="Not set"></label></div><p class="edit-help">Count stock in the pack / unit above. Enter 0 when you’re out, or leave blank if you haven’t checked.</p><div class="dialog-actions"><button type="button" id="cancel-edit">Cancel</button><button class="primary-button" type="submit">Save changes</button></div></form></dialog>
   <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>

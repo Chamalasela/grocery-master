@@ -8,7 +8,8 @@ Open `index.html` directly in a browser, or run `python3 -m http.server 4173` fr
 
 ## Features
 
-- Add, edit, and remove weekly staples with free-form quantities.
+- Add, edit, and remove weekly staples with a pack / unit (such as a 12-egg box or 250 g pack), number to buy, and optional stock at home.
+- Click an item’s “At home” badge to update stock as you use it. Blank means not yet counted; zero means out of stock. Stock is tracked manually, independently of shopping checkmarks, and stays visible across weeks. Existing saved lists retain their quantities and checkmarks, with stock initially unset.
 - Check items off as you shop; filter by remaining items or items in your basket.
 - Track shopping progress and reset checkmarks.
 - Automatically carry items and quantities into each new Monday-starting week, clearing checkmarks. Checks stay visible after finishing a shop until the next week; “Start next week” prepares that week early.
@@ -16,3 +17,7 @@ Open `index.html` directly in a browser, or run `python3 -m http.server 4173` fr
 - Responsive layout, keyboard controls, labeled checkboxes, and reduced-motion support.
 
 The first launch includes an editable example list. Weekly rollover is checked on launch, when the page regains focus, and once a minute while open. Dates use the device’s local timezone. If several weeks pass, the app moves straight to the current week. Starting a future week early preserves its checks until a later week begins.
+
+## Verify
+
+Run `node --check app.js` and `node tests/weekly-rollover.cjs` to check syntax, calendar rollover, stock retention, and saved-list migration.
